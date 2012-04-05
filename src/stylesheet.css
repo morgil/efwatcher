@@ -1,23 +1,23 @@
-#mdebw-button {
-	list-style-image: url("resource://mdebw/icon.png") !important;
+#efwatcher-button {
+	list-style-image: url("resource://efwatcher/icon.png") !important;
 }
 
-toolbar[iconsize="small"] #mdebw-button {
-	list-style-image: url("resource://mdebw/icon16.png") !important;
+toolbar[iconsize="small"] #efwatcher-button {
+	list-style-image: url("resource://efwatcher/icon16.png") !important;
 }
 
 /* default-ordnericon */
-#mdebw-button menuitem:not([image]) {
+#efwatcher-button menuitem:not([image]) {
 	list-style-image: url("chrome://global/skin/icons/folder-item.png");
 	-moz-image-region: rect(0px, 32px, 16px, 16px);
 }
 
 /* label neben dem icon anzeigen */
-#mdebw-button toolbarbutton {
+#efwatcher-button toolbarbutton {
 	-moz-box-orient: horizontal !important;
 	font-family: sans-serif;
 }
-#mdebw-button label {
+#efwatcher-button label {
 	display: -moz-box !important;
 	padding-left: 4px;
 }

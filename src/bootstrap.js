@@ -1,8 +1,6 @@
-//resource://mdebw/threadicons/Gehirnsalat.png
-
 var Ci = Components.interfaces;
 Components.utils.import("resource://gre/modules/Services.jsm");
-Services.ss = Components.classes["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
+var StyleSheetService = Components.classes["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
 
 function getKeys(obj) {
 	let keys = [];
@@ -22,12 +20,16 @@ var console = {
 	}
 }
 
-const PREF_BRANCH = "extensions.mdebw.";
+const PREF_BRANCH = "extensions.efwatcher.";
 //TODO: fragile if button after this one is removed
 const PREFS = {
 	toolbar:	"nav-bar",
 	anchor:	"",
 	delay:	120000,
+	messageCount: 40,
+	unseenOnly: true,
+	hostName: "https://www.community.e-fellows.net",
+	tooltipMessage: "Linksklick zum Aktualisieren, Mittelklick um alle Benachrichtigungen zu �ffnen.\n\nLinksklick auf eine Benachrichtigung um sie zu �ffnen, Mittelklick um sie zu l�schen."
 };
 
 function setDefaultPrefs() {
@@ -52,14 +54,16 @@ function resetInterval(window) {
 
 var BrowserHelper = {
 	gotoBoard: function() {
-		let baseURI = "http://forum.mods.de/bb/";
+		let prefs = Services.prefs.getBranch(PREF_BRANCH);
+		let baseURI = prefs.getCharPref("hostName") + "/start";
 		BrowserHelper.openWithReusing(baseURI, function(uri) {
 			let isRoot = uri == baseURI;
-			return isRoot |= uri == baseURI + "index.php";
-		});
+			return isRoot |= uri == baseURI;
+		}, false);
 	},
 	
-	openWithReusing: function(url, comperator) {
+	openWithReusing: function(url, comparator, readIds) {
+		let prefs = Services.prefs.getBranch(PREF_BRANCH);
 		let browserEnumerator = Services.wm.getEnumerator("navigator:browser");
 		
 		// Check each browser instance for our URL
@@ -74,7 +78,7 @@ var BrowserHelper = {
 				let currentBrowser = tabbrowser.getBrowserAtIndex(index);
 				
 				let testURI = currentBrowser.currentURI.spec;
-				if (comperator && comperator(testURI) || url == testURI) {
+				if (comparator && comparator(testURI) || url == testURI) {
 					// The URL is already opened. Select this tab.
 					tabbrowser.selectedTab = tabbrowser.mTabs[index];
 					
@@ -92,6 +96,10 @@ var BrowserHelper = {
 		if (!found) {
 			this.openTab(url);
 		}
+
+		if (readIds) {
+			BrowserHelper.markRead(readIds);
+		}
 	},
 	
 	openTab: function(url) {
@@ -104,102 +112,134 @@ var BrowserHelper = {
 			window.open(url);
 		}
 	},
-}
-
-function specificIcon(title) {
-	let icons = [
-		"Black Mesa Source",
-		"Browserthread",
-		"Das Ende",
-		"Gehirnsalat",
-		"Greasemonkey",
-		"Linux",
-		"Magicka",
-		"Minecraft",
-		"Ultimate"
-	];
 	
-	for (let i=0; i<icons.length; i++)
-		if (title.indexOf(icons[i]) != -1)
-			return "resource://mdebw/resources/threadicons/" + icons[i] + ".png";
-	
-	return null;
+	markRead: function(readIds)  {
+		let prefs = Services.prefs.getBranch(PREF_BRANCH);
+		//Angezeigte IDs als gelesen markieren
+		let url = prefs.getCharPref("hostName") + "/user/journal/markseen/entries/" + readIds;
+		let markReadReq = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
+		markReadReq.open("GET", url, true);
+		markReadReq.send(null);
+	}
 }
 
 function updateList(window) {
 	resetInterval(window);
-	
+	let prefs = Services.prefs.getBranch(PREF_BRANCH);
+
+	let url = prefs.getCharPref("hostName") + "/user/journal/list";
+	url = url + "/count/" + prefs.getIntPref("messageCount");
+	if (prefs.getBoolPref("unseenOnly")) {
+		url = url + "/unseenOnly/1";
+	}
+
 	let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
-	req.open("GET", "http://forum.mods.de/bb/xml/bookmarks.php", true);
+	req.open("GET", url, true);
 	req.onreadystatechange = function (aEvt) {
 		if (req.readyState != 4)
 			return;
 		
-		let menu = window.document.getElementById("mdebw-menu");
+		let menu = window.document.getElementById("efwatcher-menu");
 		while (menu.childNodes.length > 0)
 			menu.removeChild(menu.firstChild);
-		
+
 		let fail = false;
-		if (req.status != 200)
+		let doc;
+
+		try {
+			doc = JSON.parse(req.responseText);
+		} catch (e) {
+			fail = true;
+		}
+
+		if(!doc)
 			fail = true;
 		else {
-			let doc = req.responseXML;
-			root = doc.getElementsByTagName("bookmarks")[0];
-			
-			if(!doc || !root)
+			let button = window.document.getElementById("efwatcher-button");
+			let newPosts = doc.length;
+			button.setAttribute("label", newPosts);
+			button.setAttribute("tooltiptext", newPosts + " neue " + (newPosts == 1 ? "Benachrichtigung" : "Benachrichtigungen") + " in der e-fellows Community\n\n" + prefs.getCharPref("tooltipMessage"));
+			if (newPosts == "0")
 				fail = true;
 			else {
-				let button = window.document.getElementById("mdebw-button");
-				let newPosts = root.getAttribute("newposts");
-				button.setAttribute("label", newPosts);
 				
-				if (newPosts == "0")
-					fail = true;
-				else {
-					//XPathResult undefined‽
-					let bookmarks = doc.evaluate("/bookmarks/bookmark", doc, null, 0, null);
-					
-					for (let bm=bookmarks.iterateNext(); bm; bm=bookmarks.iterateNext()) {
-						let newposts = bm.getAttribute("newposts");
-						let thread = bm.getElementsByTagName("thread")[0];
-						let TID = thread.getAttribute("TID");
-						let title = thread.textContent.replace(/&#93;/, "]");
-						let PID = bm.getAttribute("PID");
-						let link = "http://forum.mods.de/bb/thread.php?TID=" + TID + "&PID=" + PID + "#reply_" + PID;
-						
-						if (newposts > 0) {
-							let item = window.document.createElement("menuitem");
-							item.setAttribute("label",     title)
-							item.setAttribute("class",     "menuitem-iconic");
-							item.setAttribute("acceltext", newposts);
-							item.setAttribute("name",      "bookmark");
-							item.setAttribute("value",     link);
-							let specificIconURL = specificIcon(title);
-							if (specificIconURL)
-								item.setAttribute("image", specificIconURL);
-							
-							let searchedTID = link.match(/bb\/thread\.php\?TID=(\d+)/)[1];
-							item.addEventListener("command", function(evt) {
-								BrowserHelper.openWithReusing(link, function (uri) {return (uri.indexOf("/bb/thread.php?TID=" + searchedTID) != -1)});
-							}, true);
-							menu.appendChild(item);
+				for (let id in doc) {
+
+					let repeatCount = 1;
+					let searchedID = -1;
+					let links = doc[id].text.match(/\<a href="([^"]*)"\>/g);
+					let title = doc[id].id;
+					let elementLink = '';
+					if (links != null) {
+						//Überall wo ich es gesehen habe scheint der letzte vorkommende Link der Relevante zu sein
+						elementLink = prefs.getCharPref("hostName") + links[links.length - 1].match(/\<a href="([^"]*)"\>/)[1];
+
+						if (elementLink.indexOf("/cid/") != -1) { //Alle mit cid drin und gleicher aid werden zusammengefasst
+
+							searchedID = elementLink.match(/\/aid\/(\d+)/)[1];
+							for each (let child in window.document.getElementById("efwatcher-menu").childNodes){
+								if (typeof child != "undefined" && child.getAttribute) {
+									let toCompare = child.getAttribute("value").match(/\/aid\/(\d+)/);
+									if (toCompare != null && toCompare[1] == searchedID) { //Gleiche aid schon vorhanden:
+										repeatCount = parseInt(child.getAttribute("acceltext")) + 1; //aktuellen Zähler um 1 erhöhen
+										title = title + "," + child.getAttribute("title");
+										menu.removeChild(child); //altes Element löschen
+									}
+								}
+							}
 						}
 					}
+
+					let newText = doc[id].text.replace(/\<([^\>]*)\>/g, '');
+
+					let item = window.document.createElement("menuitem");
+					item.setAttribute("label",     newText)
+					item.setAttribute("class",     "menuitem");
+					if (repeatCount > 0)
+						item.setAttribute("acceltext", "+" + repeatCount);
+					item.setAttribute("name",      "bookmark");
+					item.setAttribute("title", title);
+					item.setAttribute("value",     elementLink);
+
+					if (links != null) {
+						item.addEventListener("command", function(evt) {
+							BrowserHelper.openWithReusing(elementLink, function (uri) {return (uri.indexOf("/aid/" + searchedID) != -1)}, title);
+						}, true);
+					} else {
+						item.addEventListener("command", function(evt) {
+							BrowserHelper.markRead(title);
+							item.parentNode.removeChild(item);
+							updateList(window);
+						});
+					}
+					item.addEventListener("click", function(evt) {
+						if (evt.button == 1) {
+								BrowserHelper.markRead(title);
+								item.parentNode.removeChild(item);
+								updateList(window);
+						}
+					}, true);
+					menu.appendChild(item);
 				}
 			}
 		}
 		
 		if (fail) {
-			let button = window.document.getElementById("mdebw-button");
+			let button = window.document.getElementById("efwatcher-button");
 			let status = null;
-			if (req.responseXML.getElementsByTagName("not-logged-in")[0]) {
+			//Erkennung HTML-Seite mit dem Loginformular, sonst gibt es wohl keine Möglichkeit einen Redirect mit XmlHttpRequest zu erkennen
+			if (req.responseText.substr(0,1) == "<") {
 				status = "Bitte einloggen";
 				button.setAttribute("label", "-");
-			} else if (req.responseXML.getElementsByTagName("forum-offline")[0]) {
-				status = "Das Forum ist offline";
-				button.setAttribute("label", "☠");
+				
+				//Wenn man nicht eingeloggt ist: Einen leeren Request auf die Startseite schicken, damit der User nach dem
+				//Einloggen nicht auf die Serviceseite weitergeleitet wird
+				let alibiRequest = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
+				alibiRequest.open("GET", prefs.getCharPref("hostName") + "/start/", true);
+				alibiRequest.send(null);
+
 			} else {
-				status = "keine ungelesenen bookmarks";
+				status = "Keine ungelesenen Benachrichtigungen";
 			}
 			let loginItem = window.document.createElement("menuitem");
 			loginItem.setAttribute("label",    status);
@@ -226,11 +266,12 @@ function loadIntoWindow(window) {
 	
 	//setup UI
 	let button = window.document.createElement("toolbarbutton");
-	button.setAttribute("id", "mdebw-button");
+	button.setAttribute("id", "efwatcher-button");
 	button.setAttribute("class", "toolbarbutton-1 chromeclass-toolbar-additional");
 	button.setAttribute("label", "-");
 	button.setAttribute("type", "menu-button");
 	button.setAttribute("removable", "true");
+	button.setAttribute("tooltiptext", prefs.getCharPref("tooltipMessage"));
 	toolbar.insertBefore(button, anchor);
 	
 	let panel = window.document.createElement("panel");
@@ -238,7 +279,7 @@ function loadIntoWindow(window) {
 	button.appendChild(panel);
 	
 	let menu = window.document.createElement("vbox");
-	menu.setAttribute("id", "mdebw-menu");
+	menu.setAttribute("id", "efwatcher-menu");
 	panel.appendChild(menu);
 	
 	//menu.appendChild(window.document.createElement("menuseparator"));
@@ -253,8 +294,8 @@ function loadIntoWindow(window) {
 		if ("menu-button" == aEvt.originalTarget.type || aEvt.originalTarget.tagName != "xul:toolbarbutton")
 			return;
 		switch (aEvt.button) {
-		case 0:
-			for each (let item in window.document.getElementById("mdebw-menu").childNodes) {
+		case 1:
+			for each (let item in window.document.getElementById("efwatcher-menu").childNodes) {
 				//hier loope ich auch über anderes zeug wie z.b. ….childNodes.length
 				if (item.getAttribute && item.getAttribute("name") == "bookmark") {
 					evt = window.document.createEvent("UIEvents");
@@ -263,7 +304,7 @@ function loadIntoWindow(window) {
 				}
 			}
 			break;
-		case 1:
+		case 0:
 			updateList(window);
 			break;
 		case 2:
@@ -283,9 +324,11 @@ function loadIntoWindow(window) {
 
 function unloadFromWindow(window) {
 	if (!window) return;
+
+	window.clearInterval(reloadInterval);
 	
-	let button = window.document.getElementById("mdebw-button");
-	
+	let button = window.document.getElementById("efwatcher-button");
+
 	if (button)
 		button.parentNode.removeChild(button);
 }
@@ -302,7 +345,7 @@ function startup(aData, aReason) {
 	let alias = Services.io.newFileURI(aData.installPath);
 	if (!aData.installPath.isDirectory())
 		alias = Services.io.newURI("jar:" + alias.spec + "!/", null, null);
-	resource.setSubstitution("mdebw", alias);
+	resource.setSubstitution("efwatcher", alias);
 	
 	// Load into any existing windows
 	let enumerator = Services.wm.getEnumerator("navigator:browser");
@@ -326,9 +369,9 @@ function startup(aData, aReason) {
 	});
 	
 	//add stylesheet
-	let uri = Services.io.newURI("resource://mdebw/resources/stylesheet.css", null, null);
-	if(!Services.ss.sheetRegistered(uri, Services.ss.USER_SHEET))
-		Services.ss.loadAndRegisterSheet(uri, Services.ss.USER_SHEET);
+	let uri = Services.io.newURI("resource://efwatcher/stylesheet.css", null, null);
+	if(!StyleSheetService.sheetRegistered(uri, StyleSheetService.USER_SHEET))
+		StyleSheetService.loadAndRegisterSheet(uri, StyleSheetService.USER_SHEET);
 }
 
 function shutdown(aData, aReason) {
@@ -338,7 +381,7 @@ function shutdown(aData, aReason) {
 	
 	//unload resource alias
 	let resource = Services.io.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
-	resource.setSubstitution("mdebw", null);
+	resource.setSubstitution("efwatcher", null);
 	
 	// Unload from any existing windows
 	let enumerator = Services.wm.getEnumerator("navigator:browser");
@@ -348,9 +391,9 @@ function shutdown(aData, aReason) {
 	}
 	
 	//remove stylesheet
-	let uri = Services.io.newURI("resource://mdebw/resources/stylesheet.css", null, null);
-	if(Services.ss.sheetRegistered(uri, Services.ss.USER_SHEET))
-		Services.ss.unregisterSheet(uri, Services.ss.USER_SHEET);
+	let uri = Services.io.newURI("resource://efwatcher/stylesheet.css", null, null);
+	if(StyleSheetService.sheetRegistered(uri, StyleSheetService.USER_SHEET))
+		StyleSheetService.unregisterSheet(uri, StyleSheetService.USER_SHEET);
 }
 
 function install(aData, aReason) { }
