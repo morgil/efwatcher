@@ -9,3 +9,11 @@ Benutzung:
 * Ein Linksklick auf das Addon-Symbol aktualisiert die Benachrichtigungen - wenn dir das automatische Update-Intervall von zwei Minuten nicht ausreicht
 * Mit einem Mittelklick auf das Addon-Symbol werden alle neuen Benachrichtigungen auf einmal geöffnet
 * Ein Mittelklick auf eine einzelne Benachrichtigung löscht sie - ideal, um langweilige Forumsdiskussionen auszublenden ohne sie lesen zu müssen ;)
+
+Datenschutz:
+------------
+Das Add-On erhebt keine persönlichen Daten, aber verwendet bei eingeloggten Nutzern deren Sitzungsinformationen für e-fellows.net.
+
+Beim Aktualisieren der Liste werden Sitzungsinformationen in Cookies an e-fellows.net geschickt. Die Datenschutzerklärung von e-fellows.net ist verfügbar unter http://www.e-fellows.net/HOME/Datenschutzbestimmungen
+
+Achtung: Im Privaten Modus wird die Aktualisierung nicht angehalten. e-fellows.net kann nicht mehr über Cookies eine Zuordnung zum eigentlichen Nutzer herstellen, über andere Informationen wie IP-Adresse oder Browserkennung kann eine Identifikation aber wie beim normalen Besuch der Seite möglich sein.
