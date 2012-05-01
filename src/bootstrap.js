@@ -2,13 +2,6 @@ var Ci = Components.interfaces;
 Components.utils.import("resource://gre/modules/Services.jsm");
 var StyleSheetService = Components.classes["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
 
-function getKeys(obj) {
-	let keys = [];
-	for(let key in obj)
-		keys.push(key);
-	return keys;
-}
-
 var console = {
 	log: function(msg) {
 		try {
@@ -29,8 +22,16 @@ const PREFS = {
 	messageCount: 40,
 	unseenOnly: true,
 	hostName: "https://www.community.e-fellows.net",
-	tooltipMessage: "Linksklick zum Aktualisieren, Mittelklick um alle Benachrichtigungen zu öffnen.\n\nLinksklick auf eine Benachrichtigung um sie zu öffnen, Mittelklick um sie zu löschen."
+	tooltipMessage: "Linksklick zum Aktualisieren, Mittelklick um alle Benachrichtigungen zu öffnen.\n\nLinksklick auf eine Benachrichtigung um sie zu öffnen, Mittelklick um sie zu löschen.",
+	debug: false
 };
+
+function debugmsg(msg, handler) {
+	let prefs = Services.prefs.getDefaultBranch(PREF_BRANCH);
+	if (prefs.getBoolPref("debug")) {
+		handler("efwatcher: " + msg);
+	}
+}
 
 function setDefaultPrefs() {
 	let prefs = Services.prefs.getDefaultBranch(PREF_BRANCH);
@@ -133,11 +134,15 @@ function updateList(window) {
 		url = url + "/unseenOnly/1";
 	}
 
+	debugmsg("Hole neue Benachrichtigungen von " + url, console.log);
+
 	let req = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
 	req.open("GET", url, true);
 	req.onreadystatechange = function (aEvt) {
-		if (req.readyState != 4)
+		debugmsg("Requeststatus jetzt " + req.readyState, console.log);
+		if (req.readyState != 4) {
 			return;
+		}
 		
 		let menu = window.document.getElementById("efwatcher-menu");
 		while (menu.childNodes.length > 0)
@@ -149,6 +154,7 @@ function updateList(window) {
 		try {
 			doc = JSON.parse(req.responseText);
 		} catch (e) {
+			debugmsg("Antwort ist kein gültiges JSON", console.warn);
 			fail = true;
 		}
 
@@ -159,8 +165,10 @@ function updateList(window) {
 			let newPosts = doc.length;
 			button.setAttribute("label", newPosts);
 			button.setAttribute("tooltiptext", newPosts + " neue " + (newPosts == 1 ? "Benachrichtigung" : "Benachrichtigungen") + " in der e-fellows Community\n\n" + prefs.getCharPref("tooltipMessage"));
-			if (newPosts == "0")
+			if (newPosts == "0") {
+				debugmsg("Keine neuen Benachrichtungen", console.log);
 				fail = true;
+			}
 			else {
 				
 				for (let id in doc) {
@@ -171,7 +179,7 @@ function updateList(window) {
 					let title = doc[id].id;
 					let elementLink = '';
 					if (links != null) {
-						//Ãœberall wo ich es gesehen habe scheint der letzte vorkommende Link der Relevante zu sein
+						//Überall wo ich es gesehen habe scheint der letzte vorkommende Link der Relevante zu sein
 						elementLink = prefs.getCharPref("hostName") + links[links.length - 1].match(/\<a href="([^"]*)"\>/)[1];
 
 						if (elementLink.indexOf("/cid/") != -1) { //Alle mit cid drin und gleicher aid werden zusammengefasst
@@ -181,9 +189,9 @@ function updateList(window) {
 								if (typeof child != "undefined" && child.getAttribute) {
 									let toCompare = child.getAttribute("value").match(/\/aid\/(\d+)/);
 									if (toCompare != null && toCompare[1] == searchedID) { //Gleiche aid schon vorhanden:
-										repeatCount = parseInt(child.getAttribute("acceltext")) + 1; //aktuellen ZÃ¤hler um 1 erhÃ¶hen
+										repeatCount = parseInt(child.getAttribute("acceltext")) + 1; //aktuellen Zähler um 1 erhöhen
 										title = title + "," + child.getAttribute("title");
-										menu.removeChild(child); //altes Element lÃ¶schen
+										menu.removeChild(child); //altes Element löschen
 									}
 								}
 							}
@@ -227,17 +235,10 @@ function updateList(window) {
 		if (fail) {
 			let button = window.document.getElementById("efwatcher-button");
 			let status = null;
-			//Erkennung HTML-Seite mit dem Loginformular, sonst gibt es wohl keine MÃ¶glichkeit einen Redirect mit XmlHttpRequest zu erkennen
+			//Erkennung HTML-Seite mit dem Loginformular, sonst gibt es wohl keine Möglichkeit einen Redirect mit XmlHttpRequest zu erkennen
 			if (req.responseText.substr(0,1) == "<") {
 				status = "Bitte einloggen";
 				button.setAttribute("label", "-");
-				
-				//Wenn man nicht eingeloggt ist: Einen leeren Request auf die Startseite schicken, damit der User nach dem
-				//Einloggen nicht auf die Serviceseite weitergeleitet wird
-				let alibiRequest = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance();
-				alibiRequest.open("GET", prefs.getCharPref("hostName") + "/start/", true);
-				alibiRequest.send(null);
-
 			} else {
 				status = "Keine ungelesenen Benachrichtigungen";
 			}
@@ -296,7 +297,7 @@ function loadIntoWindow(window) {
 		switch (aEvt.button) {
 		case 1:
 			for each (let item in window.document.getElementById("efwatcher-menu").childNodes) {
-				//hier loope ich auch Ã¼ber anderes zeug wie z.b. â€¦.childNodes.length
+				//hier loope ich auch über anderes zeug wie z.b. ….childNodes.length
 				if (item.getAttribute && item.getAttribute("name") == "bookmark") {
 					evt = window.document.createEvent("UIEvents");
 					evt.initEvent("command", true, true);
