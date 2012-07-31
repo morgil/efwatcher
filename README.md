@@ -1,6 +1,13 @@
 e-fellows watcher
 =================
 
+Installation:
+-------------
+Am Besten von der [offiziellen Add-On-Seite](https://addons.mozilla.org/de/firefox/addon/e-fellows-watcher/).
+
+Beschreibung:
+-------------
+
 Hält dich immer auf dem neuesten Stand, was in der [e-fellows.net community](https://community.e-fellows.net) passiert. Zeigt dir Anzahl und Inhalt neuer Meldungen vom Teil "Neues für dich persönlich" auf deiner START-Seite an und erlaubt dir, direkt zum Ziel hinzuklicken.
 
 Benutzung:
