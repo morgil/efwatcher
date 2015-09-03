@@ -1,6 +1,8 @@
 e-fellows watcher
 =================
 
+Dieses Add-On wird nicht mehr weiterentwickelt, da das Benachrichtigungssystem umgebaut wurde und nicht mehr mit dieser Erweiterung kompatibel ist.
+
 Installation:
 -------------
 Am Besten von der [offiziellen Add-On-Seite](https://addons.mozilla.org/de/firefox/addon/e-fellows-watcher/).
@@ -8,19 +10,19 @@ Am Besten von der [offiziellen Add-On-Seite](https://addons.mozilla.org/de/firef
 Beschreibung:
 -------------
 
-Hält dich immer auf dem neuesten Stand, was in der [e-fellows.net community](https://community.e-fellows.net) passiert. Zeigt dir Anzahl und Inhalt neuer Meldungen vom Teil "Neues für dich persönlich" auf deiner START-Seite an und erlaubt dir, direkt zum Ziel hinzuklicken.
+HÃ¤lt dich immer auf dem neuesten Stand, was in der [e-fellows.net community](https://community.e-fellows.net) passiert. Zeigt dir Anzahl und Inhalt neuer Meldungen vom Teil "Neues fÃ¼r dich persÃ¶nlich" auf deiner START-Seite an und erlaubt dir, direkt zum Ziel hinzuklicken.
 
 Benutzung:
 ----------
-* Ein Klick auf den Pfeil öffnet die aktuellen Benachrichtigungen, wenn du eine anklickst wird sie in einem neuen Tab geöffnet - oder in einem existierenden, wenn du die Frage schon offen hattest
+* Ein Klick auf den Pfeil Ã¶ffnet die aktuellen Benachrichtigungen, wenn du eine anklickst wird sie in einem neuen Tab geÃ¶ffnet - oder in einem existierenden, wenn du die Frage schon offen hattest
 * Ein Linksklick auf das Addon-Symbol aktualisiert die Benachrichtigungen - wenn dir das automatische Update-Intervall von zwei Minuten nicht ausreicht
-* Mit einem Mittelklick auf das Addon-Symbol werden alle neuen Benachrichtigungen auf einmal geöffnet
-* Ein Mittelklick auf eine einzelne Benachrichtigung löscht sie - ideal, um langweilige Forumsdiskussionen auszublenden ohne sie lesen zu müssen ;)
+* Mit einem Mittelklick auf das Addon-Symbol werden alle neuen Benachrichtigungen auf einmal geÃ¶ffnet
+* Ein Mittelklick auf eine einzelne Benachrichtigung lÃ¶scht sie - ideal, um langweilige Forumsdiskussionen auszublenden ohne sie lesen zu mÃ¼ssen ;)
 
 Datenschutz:
 ------------
-Das Add-On erhebt keine persönlichen Daten, aber verwendet bei eingeloggten Nutzern deren Sitzungsinformationen für e-fellows.net.
+Das Add-On erhebt keine persÃ¶nlichen Daten, aber verwendet bei eingeloggten Nutzern deren Sitzungsinformationen fÃ¼r e-fellows.net.
 
-Beim Aktualisieren der Liste werden Sitzungsinformationen in Cookies an e-fellows.net geschickt. Die Datenschutzerklärung von e-fellows.net ist verfügbar unter http://www.e-fellows.net/HOME/Datenschutzbestimmungen
+Beim Aktualisieren der Liste werden Sitzungsinformationen in Cookies an e-fellows.net geschickt. Die DatenschutzerklÃ¤rung von e-fellows.net ist verfÃ¼gbar unter http://www.e-fellows.net/HOME/Datenschutzbestimmungen
 
-Achtung: Im Privaten Modus wird die Aktualisierung nicht angehalten. e-fellows.net kann nicht mehr über Cookies eine Zuordnung zum eigentlichen Nutzer herstellen, über andere Informationen wie IP-Adresse oder Browserkennung kann eine Identifikation aber wie beim normalen Besuch der Seite möglich sein.
+Achtung: Im Privaten Modus wird die Aktualisierung nicht angehalten. e-fellows.net kann nicht mehr Ã¼ber Cookies eine Zuordnung zum eigentlichen Nutzer herstellen, Ã¼ber andere Informationen wie IP-Adresse oder Browserkennung kann eine Identifikation aber wie beim normalen Besuch der Seite mÃ¶glich sein.
